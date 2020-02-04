@@ -36,17 +36,8 @@ class MultiTaskLoss(nn.Module):
     def CCCloss(self, pred, target):
         ignore_index = -10
         pred = pred.to(device)
-        # print("vpt: {0}, vtt: {1}".format(pred.type(), target.type()))
         pred, target = self.cvalid(pred, target, ignore_index)
-        # print("vp: {0}, vt: {1}".format(pred, truth))
-        # TODO: remove .type and .to(device)
-        # pred = pred.type(torch.DoubleTensor)
         assert pred.size(0) == target.size(0)
-        # truth = truth.type(torch.DoubleTensor)
-        # print("pred size:", pred.size())
-        # print("pred type is ", pred.type())
-        # print("truth size:", truth.size())
-        # print("truth type is ", truth.type())
         mean_cent_prod = ((pred - pred.mean()) * (target - target.mean())).mean()
         # 1 - is to minimize when training, to minimize loss
         loss = 2 * mean_cent_prod / (pred.var() + target.var() + (pred.mean() - target.mean()) ** 2)
@@ -55,15 +46,10 @@ class MultiTaskLoss(nn.Module):
 
     def BCELossWithIgnore(self, pred, target):
         ignore_index = -1
-        # non_pad_mask = label.ne(ingore_index), loss = loss.masked_select(non_pad_mask)
         pred, target = self.valid(pred, target, ignore_index)
-        # truths = truths.type(torch.DoubleTensor)
         target = target.to(device)
         assert pred.size(0) == target.size(0)
-        # print("AU pred:{0}, truth:{1}".format(preds, truths))
-        # loss_msm = nn.MultiLabelSoftMarginLoss()
         loss = self.bce(pred, target)
-        # loss_m = loss_msm(preds, truths)
         # torch.isnan(x) or x != x -> retval: mask mat where nan is 1
         loss[torch.isnan(loss)] = 0
         return loss, target.size(0)
@@ -74,8 +60,6 @@ class MultiTaskLoss(nn.Module):
         return self.cross_entropy(pred, target.long())
 
     def Focalloss(self, pred, target):
-        # print("pred size:", pred.size())
-        # print("tagr size:", target.size())
         if pred.shape == torch.Size([0]) or target.shape == torch.Size([0]):
             return torch.tensor(0)
         else:
@@ -119,9 +103,7 @@ class MultiTaskLoss(nn.Module):
         v_loss, va_bs = self.CCCloss(v_pred, v_target)
         a_loss, _ = self.CCCloss(a_pred, a_target)
         au_loss, au_bs = self.BCELossWithIgnore(au_pred, au_target)
-        # if args.arcface:
-        #     expr_loss = self.Focalloss(expr_pred, expr_target)
-        # else:
+
         expr_loss = self.CCEloss(expr_pred, expr_target)
         va_loss = 1 - 0.5 * (v_loss + a_loss)
 
